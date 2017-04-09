@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Broadcasts a received float sample to multiple listeners
+ * Broadcasts an item to multiple listeners
  */
 public class Broadcaster<T> implements Listener<T>
 {
@@ -58,6 +58,11 @@ public class Broadcaster<T> implements Listener<T>
 	
 	public void addListener( Listener<T> listener )
 	{
+	    if(listener == null)
+        {
+            throw new IllegalArgumentException("Listener cannot be null");
+        }
+
 		mListeners.add( listener );
 	}
 	

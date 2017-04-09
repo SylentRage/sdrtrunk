@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package module.decode.p25;
 
@@ -41,18 +42,15 @@ import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
 
-public class P25_C4FMDecoder extends P25Decoder 
-	implements IFrequencyChangeListener, IFrequencyChangeProvider,IFilteredRealBufferListener
+public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferListener
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25_C4FMDecoder.class );
 	
     /* Instrumentation Taps */
-	private static final String INSTRUMENT_FILTER_OUTPUT = "Tap Point: Pre-Filter Output";
 	private static final String INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT = "Tap Point: Symbol Filter Output";
 	private static final String INSTRUMENT_C4FM_SLICER_OUTPUT = "Tap Point: C4FM Slicer Output";
 
 	private List<TapGroup> mAvailableTaps;
-	private RealFIRFilter_RB_RB mC4FMPreFilter;
 	private C4FMSymbolFilter mSymbolFilter;
 	private C4FMSlicer mC4FMSlicer;
 	private P25MessageFramer mMessageFramer;
@@ -74,15 +72,9 @@ public class P25_C4FMDecoder extends P25Decoder
 	{
 		super( aliasList );
 		
-		/* Filter demodulated sample buffers */
-		float[] filter = FilterFactory.getLowPass( 48000, 2500, 4000, 80, WindowType.HANNING, true );
-
-		mC4FMPreFilter = new RealFIRFilter_RB_RB( filter, 1.0f );
-
 		/* Shape gain and frequency offsets to optimize sample stream */
 		mSymbolFilter = new C4FMSymbolFilter( frequencyCorrectionMaximum );
-		mC4FMPreFilter.setListener( mSymbolFilter );
-		
+
 		/* Convert samples to symbols */
 		mC4FMSlicer = new C4FMSlicer();
 		mSymbolFilter.setListener( mC4FMSlicer );
@@ -99,9 +91,6 @@ public class P25_C4FMDecoder extends P25Decoder
 	public void dispose()
 	{
 		super.dispose();
-		
-		mC4FMPreFilter.dispose();
-		mC4FMPreFilter = null;
 		
 		mSymbolFilter.dispose();
 		mSymbolFilter = null;
@@ -121,7 +110,7 @@ public class P25_C4FMDecoder extends P25Decoder
 	@Override
 	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
-		return mC4FMPreFilter;
+		return mSymbolFilter;
 	}
 	
 	/**
@@ -135,8 +124,6 @@ public class P25_C4FMDecoder extends P25Decoder
 			mAvailableTaps = new ArrayList<>();
 
 			TapGroup group = new TapGroup( "P25 C4FM Decoder" );
-			
-			group.add( new FloatBufferTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
 			
 			group.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
 			group.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
@@ -165,11 +152,6 @@ public class P25_C4FMDecoder extends P25Decoder
 		
 		switch( tap.getName() )
 		{
-			case INSTRUMENT_FILTER_OUTPUT:
-				FloatBufferTap filterOutput = (FloatBufferTap)tap;
-				mC4FMPreFilter.setListener( filterOutput );
-				filterOutput.setListener( mSymbolFilter );
-				break;
 			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
 				FloatTap symbolTap = (FloatTap)tap;
 				mSymbolFilter.setListener( symbolTap );
@@ -201,9 +183,6 @@ public class P25_C4FMDecoder extends P25Decoder
 		
 		switch( tap.getName() )
 		{
-			case INSTRUMENT_FILTER_OUTPUT:
-				mC4FMPreFilter.setListener( mSymbolFilter );
-				break;
 			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
 				mSymbolFilter.setListener( mC4FMSlicer );
 				break;

@@ -1,27 +1,32 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package module.decode.event;
 
-import javax.swing.ImageIcon;
-import javax.swing.table.DefaultTableCellRenderer;
-
-import settings.SettingsManager;
 import alias.Alias;
+import gui.SDRTrunk;
+import icon.IconManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
 
 /**
  * Custom renderer for JTable cells that contain Alias objects.  Renders the
@@ -30,45 +35,37 @@ import alias.Alias;
  */
 public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
 {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
+    private final static Logger mLog = LoggerFactory.getLogger(CallEventAliasCellRenderer.class);
 
-	private SettingsManager mSettingsManager;
-	
-	public CallEventAliasCellRenderer( SettingsManager settingsManager )
-	{
-		super();
-		mSettingsManager = settingsManager;
-	}
-	
-	public void setValue( Object obj )
-	{
-		if( obj != null && obj instanceof Alias )
-		{
-			Alias alias = (Alias)obj;
-			
-			setText( alias.getName() );
-			
-			ImageIcon icon = getIcon( alias, SettingsManager.DEFAULT_ICON_SIZE );
-			
-			if( icon != null )
-			{
-				setIcon( icon );
-			}
-		}
-		else
-		{
-			setText( " " );
-			setIcon( null );
-		}
-	}
-	
-	private ImageIcon getIcon( Alias alias, int height )
-	{
-		if( mSettingsManager != null && alias != null )
-		{
-			return mSettingsManager.getImageIcon( alias.getIconName(), height );
-		}
-		
-		return null;
-	}
+    private IconManager mIconManager;
+
+    public CallEventAliasCellRenderer(IconManager iconManager)
+    {
+        super();
+        mIconManager = iconManager;
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+    {
+        JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+        if(value instanceof Alias)
+        {
+            Alias alias = (Alias)value;
+
+            label.setText(alias.getName());
+            label.setForeground(alias.getDisplayColor());
+            label.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
+        }
+        else
+        {
+            label.setText("");
+            label.setForeground(table.getForeground());
+            label.setIcon(null);
+        }
+
+        return label;
+    }
 }
